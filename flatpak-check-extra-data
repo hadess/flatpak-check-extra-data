@@ -1,0 +1,108 @@
+#!/usr/bin/lua
+
+--[[
+ * Copyright (C) 2019 Red Hat, Inc.
+ * Author: Bastien Nocera <hadess@hadess.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+--]]
+
+local json = require "json"
+local inspect = require "lib.inspect"
+local sha256 = require "lib.sha256"
+
+local socket = require "socket"
+local http = require "socket.http"
+local https = require "ssl.https"
+
+function get_url(url)
+        local body, code, headers
+        if url:match('https%:.-') then
+                body, code, headers = https.request(url)
+        elseif url:match('http%:.-') then
+                body, code, headers = http.request(url)
+        else
+                return nil
+        end
+
+        if code == 200 then
+                return body
+        else
+                return nil
+        end
+end
+
+function get_extra_data(json, extra_data)
+        if json['type'] == 'extra-data' then
+                table.insert(extra_data, json)
+        elseif type(json) == 'table' then
+                for key,value in pairs(json) do
+                        if type(value) == 'table' then
+                                get_extra_data(value, extra_data)
+                        end
+                end
+        end
+end
+
+function usage()
+	print("check-version [MANIFEST]")
+end
+
+local file = nil
+local options = {}
+for k, v in ipairs(arg) do
+	if file ~= nil then
+		usage ()
+		return 1
+	end
+	file = v
+	break
+end
+
+local f = io.open(file, "rb")
+local s = f:read('*a')
+f:close()
+
+local ret = json.decode(s)
+extra_data = {}
+get_extra_data(ret, extra_data)
+
+for i,_ in pairs(extra_data) do
+        local url, size, sha
+        local url = extra_data[i].url
+        local expected_size = extra_data[i].size
+        local expected_sha = extra_data[i].sha256
+
+        print ("Downloading URL '" .. url .. "'")
+        local data = get_url(url)
+        if not data then
+                error('Invalid URL: ' .. url)
+        end
+
+        local size = string.len(data)
+        local sha = sha256.hash256(data)
+
+        if size ~= expected_size and
+                sha ~= expected_sha then
+                error('Change sha256 to \'' .. sha .. '\'\n' .. 'Change size to: ' .. size)
+        elseif size ~= expected_size then
+                error('Size does not match: ' .. size .. ' != ' .. expected_size)
+        elseif sha ~= expected_sha then
+                error('SHA256 does not match: ' .. sha .. ' != ' .. expected_sha)
+        end
+
+        print ('OK')
+end

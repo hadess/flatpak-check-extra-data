@@ -15,6 +15,10 @@ in a JSON Flatpak manifest.
 ./flatpak-check-extra-data /path/to/com.adobe.Flash-Player-Projector.json
 ```
 
+## Similar projects
+
+- [flatpak-external-data-checker](https://github.com/endlessm/flatpak-external-data-checker)
+
 ## License
 
 - main script under the GNU General Public License v2 or later

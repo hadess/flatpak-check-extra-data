@@ -7,6 +7,7 @@ in a JSON Flatpak manifest.
 
 - lua
 - lua-json
+- lua-sec
 - lua-socket
 
 ## Usage

@@ -57,8 +57,20 @@ function get_extra_data(json, extra_data)
         end
 end
 
+function bold(enable)
+	if enable then
+		for _,i in ipairs{ 0x1b,0x5b, 0x31, 0x6d } do io.write(string.char(i)) end
+	else
+		for _,i in ipairs{ 0x1b,0x5b, 0x30, 0x6d } do io.write(string.char(i)) end
+	end
+end
+
 function usage()
-	print("check-version [MANIFEST]")
+	io.write('flatpak-check-extra-data ')
+	bold(true)
+	io.write('MANIFEST')
+	bold(false)
+	io.write('\n')
 end
 
 local file = nil

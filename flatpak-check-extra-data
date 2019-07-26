@@ -72,6 +72,11 @@ for k, v in ipairs(arg) do
 	break
 end
 
+if not file then
+	usage ()
+	return 1
+end
+
 local f = io.open(file, "rb")
 local s = f:read('*a')
 f:close()
